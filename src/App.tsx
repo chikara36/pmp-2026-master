@@ -352,7 +352,10 @@ function Dashboard({
 }) {
   const known = TERMS.filter((term) => progress.mastery[term.id] === 'known').length;
   const review = TERMS.filter((term) => progress.mastery[term.id] === 'review').length;
-  const studied = Object.keys(progress.mastery).length;
+  const studied = TERMS.filter((term) => {
+    const mastery = progress.mastery[term.id];
+    return mastery === 'review' || mastery === 'known';
+  }).length;
   const totalAccuracy =
     Object.values(progress.answeredByDomain).reduce((a, b) => a + b, 0) > 0
       ? Math.round(
@@ -789,10 +792,17 @@ function Practice({
   const [selected, setSelected] = useState<number | null>(null);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [finished, setFinished] = useState(false);
+  const availableQuestions = SCENARIOS.filter(
+    (item) => domain === 'all' || item.domain === domain,
+  ).length;
+  const questionCountOptions = ([10, 20] as const).filter(
+    (count) => count <= availableQuestions,
+  );
+  const selectedLimit = questionCountOptions.includes(limit) ? limit : 10;
 
   const start = () => {
     const pool = SCENARIOS.filter((item) => domain === 'all' || item.domain === domain);
-    setQuestions(sample(pool, limit));
+    setQuestions(sample(pool, selectedLimit));
     setIndex(0);
     setSelected(null);
     setAnswers({});
@@ -839,12 +849,9 @@ function Practice({
             />
             <FilterSelect
               label="問題数"
-              value={String(limit)}
+              value={String(selectedLimit)}
               onChange={(value) => setLimit(Number(value) as 10 | 20)}
-              options={[
-                ['10', '10問'],
-                ['20', '20問'],
-              ]}
+              options={questionCountOptions.map((count) => [String(count), `${count}問`])}
             />
           </div>
           <div className="mt-7 rounded-2xl bg-slate-50 p-5">
